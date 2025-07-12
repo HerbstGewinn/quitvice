@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Streak, MotivationalQuote, User, StreakType } from '@/types';
 import { streakService, quoteService, userService, utils } from '@/services/supabase';
+import { supabase } from '@/services/supabase';
 
 interface AppState {
   user: User | null;
@@ -175,30 +176,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
-      
-      // TODO: Implement Supabase auth registration
-      // const { data: { user }, error } = await supabase.auth.signUp({
-      //   email,
-      //   password,
-      // });
-      
-      // if (error) throw error;
-      // if (user) {
-      //   const profile = await userService.updateUserProfile(user.id, { name });
-      //   dispatch({ type: 'SET_USER', payload: profile });
-      // }
-      
-      // Mock registration for now
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      dispatch({ type: 'SET_USER', payload: mockUser });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Registration failed' });
+      // Real Supabase registration
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      const user = data.user;
+      if (!user) throw new Error('No user returned from Supabase');
+      // Update user profile with name
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      dispatch({ type: 'SET_USER', payload: { id: user.id, email: user.email || '', name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Registration failed' });
+      throw error;
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }

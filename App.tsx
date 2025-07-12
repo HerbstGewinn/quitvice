@@ -10,9 +10,11 @@ import { AppProvider } from '@/context/AppContext';
 import HomeScreen from '@/screens/HomeScreen';
 import StreakDetailScreen from '@/screens/StreakDetailScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
+import SignUpScreen from './src/screens/SignUpScreen';
 import { StreakDetailParams } from '@/types';
 
 export type RootStackParamList = {
+  SignUp: undefined;
   Home: undefined;
   StreakDetail: StreakDetailParams;
   Profile: undefined;
@@ -61,7 +63,9 @@ export default function App() {
               headerShown: false,
               cardStyle: { backgroundColor: '#181410' }
             }}
+            initialRouteName="SignUp"
           >
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="StreakDetail" component={StreakDetailScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />

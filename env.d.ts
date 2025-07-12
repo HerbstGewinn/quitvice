@@ -1,12 +1,16 @@
-// Environment configuration
+declare module '@env' {
+  export const SUPABASE_URL: string;
+  export const SUPABASE_ANON_KEY: string;
+}
+
 export const config = {
   supabase: {
-    url: process.env.EXPO_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL',
-    anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY',
+    url: SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY,
   },
   app: {
-    name: process.env.EXPO_PUBLIC_APP_NAME || 'QuitStreakCoach',
-    version: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
+    name: 'QuitStreakCoach',
+    version: '1.0.0',
   },
   features: {
     enableNotifications: true,

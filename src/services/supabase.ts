@@ -1,5 +1,7 @@
+// @ts-ignore: TypeScript module declaration for @env is provided in a .d.ts file
 import { createClient } from '@supabase/supabase-js';
 import { Streak, StreakAttempt, MotivationalQuote, User, StreakType, Milestone } from '@/types';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 
 // Updated mock milestone data with health benefits for each vice
 const mockMilestones: Milestone[] = [
@@ -151,19 +153,8 @@ const mockQuotes: MotivationalQuote[] = [
   },
 ];
 
-// Mock Supabase client for development
-export const supabase = {
-  from: () => ({
-    select: () => ({ eq: () => ({ order: () => ({ limit: () => ({ single: () => ({}) }) }) }) }),
-    insert: () => ({ select: () => ({ single: () => ({}) }) }),
-    update: () => ({ eq: () => ({ select: () => ({ single: () => ({}) }) }) }),
-  }),
-  auth: {
-    signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
-    signUp: () => Promise.resolve({ data: { user: null }, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-  },
-};
+// Real Supabase client
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Streak operations
 export const streakService = {
