@@ -1,7 +1,7 @@
 // @ts-ignore: TypeScript module declaration for @env is provided in a .d.ts file
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 import { createClient } from '@supabase/supabase-js';
 import { Streak, StreakAttempt, MotivationalQuote, User, StreakType, Milestone } from '@/types';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 
 // Updated mock milestone data with health benefits for each vice
 const mockMilestones: Milestone[] = [

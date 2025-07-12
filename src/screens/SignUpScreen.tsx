@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '@/context/AppContext';
 
@@ -6,124 +8,315 @@ export default function SignUpScreen() {
   const navigation = useNavigation();
   const { register, loading, error } = useApp();
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [formError, setFormError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [formError, setFormError] = useState('');
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError("");
+  const handleEmailSignUp = async () => {
+    setFormError('');
     if (!email || !password || !name) {
-      setFormError("Bitte fülle alle Felder aus.");
+      setFormError('Please fill out all fields.');
       return;
     }
     try {
       await register(email, password, name);
       navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
     } catch (err: any) {
-      setFormError(err.message || "Registrierung fehlgeschlagen");
+      setFormError(err.message || 'Registration failed');
     }
   };
 
   return (
-    <div
-      className="relative min-h-screen flex flex-col justify-end items-center bg-[#141414] overflow-hidden"
-      style={{ fontFamily: '"Space Grotesk", "Noto Sans", sans-serif' }}
-    >
-      {/* 9:16 Video Background (placeholder URL) */}
-      <video
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        src="https://www.w3schools.com/html/mov_bbb.mp4" // Placeholder video URL
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{ aspectRatio: "9/16" }}
+    <View style={styles.container}>
+      <Video
+        source={{ uri: 'https://www.w3schools.com/html/mov_bbb.mp4' }}
+        style={StyleSheet.absoluteFill}
+        shouldPlay
+        isLooping
+        resizeMode={ResizeMode.COVER}
+        isMuted
       />
-
-      {/* Overlay for darkening video */}
-      <div className="absolute inset-0 bg-black/50 z-10" />
-
-      {/* Sign Up Panel */}
-      <div className="relative z-20 w-full max-w-[420px] mx-auto mb-12 px-4">
-        <div className="backdrop-blur-md bg-black/60 rounded-2xl p-6 flex flex-col items-center gap-4 shadow-lg">
-          {/* Placeholder for Logo and marketing copy */}
-          <div className="flex flex-col items-center mb-2">
-            <div className="h-10 mb-2 w-10 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold">Logo</div>
-            <span className="text-white text-lg font-bold tracking-wide">Rise</span>
-            <span className="text-[#ff6a00] text-xs font-medium mt-1">500,000+ members</span>
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-yellow-400 text-base">★★★★★</span>
-              <span className="text-xs text-white/80">(4.7)</span>
-            </div>
-          </div>
-
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView
+        style={styles.contentWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.panel}>
+          {/* Logo and marketing copy */}
+          <View style={styles.logoBox}>
+            <View style={styles.logoPlaceholder}><Text style={styles.logoText}>Logo</Text></View>
+            <Text style={styles.title}>quitvice</Text>
+            <Text style={styles.members}>1000+ members</Text>
+            <View style={styles.starsRow}>
+              <Text style={styles.stars}>★★★★★</Text>
+              <Text style={styles.rating}>(4.7)</Text>
+            </View>
+          </View>
           {/* Sign Up Buttons or Email Form */}
           {!showEmailForm ? (
             <>
-              <button className="w-full h-12 rounded-full bg-white text-black font-bold text-base mb-1 shadow transition hover:bg-[#ff6a00] hover:text-white" disabled>
-                <span className="truncate">Mit Apple fortfahren</span>
-              </button>
-              <button className="w-full h-12 rounded-full bg-[#303030] text-white font-bold text-base mb-1 shadow transition hover:bg-[#ff6a00]" disabled>
-                <span className="truncate">Mit Google fortfahren</span>
-              </button>
-              <button className="w-full h-12 rounded-full bg-[#303030] text-white font-bold text-base shadow transition hover:bg-[#ff6a00]" onClick={() => setShowEmailForm(true)}>
-                <span className="truncate">Mit E-Mail fortfahren</span>
-              </button>
+              <TouchableOpacity style={styles.appleBtn} disabled>
+                <Text style={styles.appleBtnText}>Continue with Apple</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.googleBtn} disabled>
+                <Text style={styles.googleBtnText}>Continue with Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.emailBtn} onPress={() => setShowEmailForm(true)}>
+                <Text style={styles.emailBtnText}>Sign up with Email</Text>
+              </TouchableOpacity>
             </>
           ) : (
-            <form className="w-full flex flex-col gap-3" onSubmit={handleEmailSignUp}>
-              <input
-                className="w-full h-12 rounded-full px-5 bg-[#222] text-white placeholder:text-[#ababab] text-base outline-none border-none"
-                type="text"
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
                 placeholder="Name"
+                placeholderTextColor="#ababab"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChangeText={setName}
+                autoCapitalize="words"
                 autoFocus
               />
-              <input
-                className="w-full h-12 rounded-full px-5 bg-[#222] text-white placeholder:text-[#ababab] text-base outline-none border-none"
-                type="email"
-                placeholder="E-Mail"
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#ababab"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
               />
-              <input
-                className="w-full h-12 rounded-full px-5 bg-[#222] text-white placeholder:text-[#ababab] text-base outline-none border-none"
-                type="password"
-                placeholder="Passwort"
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#ababab"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChangeText={setPassword}
+                secureTextEntry
               />
-              {(formError || error) && (
-                <div className="text-red-400 text-xs text-center">{formError || error}</div>
-              )}
-              <button
-                type="submit"
-                className="w-full h-12 rounded-full bg-[#ff6a00] text-white font-bold text-base shadow transition hover:bg-[#ff8c1a] disabled:opacity-60"
+              {(formError || error) ? (
+                <Text style={styles.errorText}>{formError || error}</Text>
+              ) : null}
+              <TouchableOpacity
+                style={[styles.registerBtn, loading && { opacity: 0.6 }]}
+                onPress={handleEmailSignUp}
                 disabled={loading}
               >
-                {loading ? 'Registrieren...' : 'Registrieren'}
-              </button>
-              <button
-                type="button"
-                className="w-full h-12 rounded-full bg-[#303030] text-white font-bold text-base shadow transition hover:bg-[#474747]"
-                onClick={() => setShowEmailForm(false)}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.registerBtnText}>Sign Up</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={() => setShowEmailForm(false)}
                 disabled={loading}
               >
-                Zurück
-              </button>
-            </form>
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+            </View>
           )}
-
           {/* Optional: Register later or restore progress */}
-          <div className="flex flex-col items-center mt-2 w-full">
-            <span className="text-white/70 text-xs mb-1">oder <span className="underline cursor-pointer">Später registrieren</span></span>
-            <a href="#" className="text-[#ff6a00] text-xs underline">Fortschritt wiederherstellen</a>
-          </div>
-        </div>
-      </div>
-    </div>
+          <View style={styles.laterBox}>
+            <Text style={styles.laterText}>or <Text style={styles.laterLink}>Register later</Text></Text>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#141414',
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  panel: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoBox: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logoPlaceholder: {
+    height: 40,
+    width: 40,
+    borderRadius: 20,
+    backgroundColor: '#888',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  logoText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  title: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  members: {
+    color: '#ff6a00',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+    fontFamily: 'Space Grotesk',
+  },
+  starsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  stars: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk',
+  },
+  rating: {
+    color: '#fff',
+    fontSize: 12,
+    marginLeft: 4,
+    opacity: 0.8,
+    fontFamily: 'Space Grotesk',
+  },
+  appleBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  appleBtnText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  googleBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#303030',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  googleBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  emailBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#303030',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  emailBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  form: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 8,
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#222',
+    color: '#fff',
+    paddingHorizontal: 20,
+    fontSize: 16,
+    marginBottom: 8,
+    fontFamily: 'Space Grotesk',
+  },
+  errorText: {
+    color: '#ff6a00',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 4,
+    fontFamily: 'Space Grotesk',
+  },
+  registerBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ff6a00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  registerBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  backBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#303030',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  backBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  laterBox: {
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+  },
+  laterText: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 2,
+    fontFamily: 'Space Grotesk',
+  },
+  laterLink: {
+    color: '#fff',
+    textDecorationLine: 'underline',
+    fontFamily: 'Space Grotesk',
+  },
+  restoreLink: {
+    color: '#ff6a00',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+    fontFamily: 'Space Grotesk',
+  },
+}); 
