@@ -11,10 +11,12 @@ import HomeScreen from '@/screens/HomeScreen';
 import StreakDetailScreen from '@/screens/StreakDetailScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import { StreakDetailParams } from '@/types';
 
 export type RootStackParamList = {
   SignUp: undefined;
+  Onboarding: undefined;
   Home: undefined;
   StreakDetail: StreakDetailParams;
   Profile: undefined;
@@ -66,6 +68,7 @@ export default function App() {
             initialRouteName="SignUp"
           >
             <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="StreakDetail" component={StreakDetailScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />

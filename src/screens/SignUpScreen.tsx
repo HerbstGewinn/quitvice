@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, PanResponder, Dimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '@/context/AppContext';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const PANEL_MIN_Y = 0;
+const PANEL_MAX_Y = SCREEN_HEIGHT - 120;
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
@@ -13,6 +17,46 @@ export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [formError, setFormError] = useState('');
 
+  // Animated panel position
+  const translateY = useRef(new Animated.Value(PANEL_MIN_Y)).current;
+  const panelOpen = useRef(true);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        let newY = PANEL_MIN_Y + gestureState.dy;
+        if (newY < 0) newY = 0;
+        if (newY > PANEL_MAX_Y) newY = PANEL_MAX_Y;
+        translateY.setValue(newY);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 60) {
+          // Swipe down to hide
+          Animated.spring(translateY, {
+            toValue: PANEL_MAX_Y,
+            useNativeDriver: true,
+          }).start(() => { panelOpen.current = false; });
+        } else {
+          // Snap back up
+          Animated.spring(translateY, {
+            toValue: PANEL_MIN_Y,
+            useNativeDriver: true,
+          }).start(() => { panelOpen.current = true; });
+        }
+      },
+    })
+  ).current;
+
+  const handlePanelTap = () => {
+    if (!panelOpen.current) {
+      Animated.spring(translateY, {
+        toValue: PANEL_MIN_Y,
+        useNativeDriver: true,
+      }).start(() => { panelOpen.current = true; });
+    }
+  };
+
   const handleEmailSignUp = async () => {
     setFormError('');
     if (!email || !password || !name) {
@@ -21,7 +65,7 @@ export default function SignUpScreen() {
     }
     try {
       await register(email, password, name);
-      navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+      navigation.reset({ index: 0, routes: [{ name: 'Onboarding' as never }] });
     } catch (err: any) {
       setFormError(err.message || 'Registration failed');
     }
@@ -42,7 +86,18 @@ export default function SignUpScreen() {
         style={styles.contentWrapper}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.panel}>
+        <Animated.View
+          style={[styles.panel, { transform: [{ translateY }] }]}
+          {...panResponder.panHandlers}
+        >
+          {/* Swipe handle */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.handleContainer}
+            onPress={handlePanelTap}
+          >
+            <View style={styles.handle} />
+          </TouchableOpacity>
           {/* Logo and marketing copy */}
           <View style={styles.logoBox}>
             <View style={styles.logoPlaceholder}><Text style={styles.logoText}>Logo</Text></View>
@@ -117,7 +172,7 @@ export default function SignUpScreen() {
           <View style={styles.laterBox}>
             <Text style={styles.laterText}>or <Text style={styles.laterLink}>Register later</Text></Text>
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -141,13 +196,30 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    marginBottom: 32,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 16,
     paddingVertical: 24,
     borderRadius: 24,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     gap: 12,
+  },
+  handleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginTop: -8,
+    zIndex: 10,
+  },
+  handle: {
+    width: 48,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#444',
+    marginBottom: 8,
   },
   logoBox: {
     alignItems: 'center',

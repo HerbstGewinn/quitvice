@@ -17,7 +17,7 @@ import { Path, Svg } from 'react-native-svg';
 
 import { useApp } from '@/context/AppContext';
 import { RootStackParamList, StreakType, StreakAttempt } from '@/types';
-import { attemptService } from '@/services/supabase';
+import { attemptService, getCurrentMilestoneBenefit } from '@/services/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -77,61 +77,67 @@ const StreakDetailScreen: React.FC = () => {
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${progress}%` }]} />
             {/* Milestone markers */}
-            {milestones.map((milestone, index) => (
-              <View
-                key={milestone.id}
-                style={[
-                  styles.milestoneMarker,
-                  {
-                    left: `${milestone.percentage}%`,
-                    backgroundColor: milestone.isReached ? ACCENT_COLOR : '#474747',
-                  }
-                ]}
-              >
-                {milestone.isReached && (
-                  <View style={styles.milestoneDot}>
-                    <Text style={styles.milestoneDotText}>✓</Text>
-                  </View>
-                )}
-              </View>
-            ))}
+            {milestones.map((milestone, index) => {
+              // Extract day count from milestone ID
+              const dayCount = parseInt(milestone.id.split('-').pop() || '0');
+              const positionPercent = (dayCount / goal) * 100;
+              
+              return (
+                <View
+                  key={milestone.id}
+                  style={[
+                    styles.milestoneMarker,
+                    {
+                      left: `${positionPercent}%`,
+                      backgroundColor: milestone.isReached ? ACCENT_COLOR : '#474747',
+                    }
+                  ]}
+                >
+                  {milestone.isReached && (
+                    <View style={styles.milestoneDot}>
+                      <Text style={styles.milestoneDotText}>✓</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
           {/* Milestone labels BELOW the bar */}
           <View style={styles.milestoneLabelsBelow}>
-            {milestones.map((milestone) => (
-              <View
-                key={milestone.id}
-                style={[
-                  styles.milestoneLabel,
-                  {
-                    left: `${milestone.percentage}%`,
-                    transform: [{ translateX: -20 }],
-                  }
-                ]}
-              >
-                <Text style={[
-                  styles.milestoneLabelText,
-                  { color: milestone.isReached ? ACCENT_COLOR : '#ababab' }
-                ]}>
-                  {milestone.percentage}%
-                </Text>
-              </View>
-            ))}
+            {milestones.map((milestone) => {
+              // Extract day count from milestone ID
+              const dayCount = parseInt(milestone.id.split('-').pop() || '0');
+              const positionPercent = (dayCount / goal) * 100;
+              
+              return (
+                <View
+                  key={milestone.id}
+                  style={[
+                    styles.milestoneLabel,
+                    {
+                      left: `${positionPercent}%`,
+                      transform: [{ translateX: -20 }],
+                    }
+                  ]}
+                >
+                  <Text style={[
+                    styles.milestoneLabelText,
+                    { color: milestone.isReached ? ACCENT_COLOR : '#ababab' }
+                  ]}>
+                    {dayCount === goal ? `${dayCount}` : `${dayCount}`}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </View>
       </View>
     );
   };
 
-  const getCurrentMilestoneBenefit = () => {
-    if (!streak?.milestones) return null;
-    // Find the highest milestone reached, or the next upcoming
-    const sorted = [...streak.milestones].sort((a, b) => a.percentage - b.percentage);
-    let milestone = sorted.find(m => m.isReached && m.benefit && m.benefit[streak.type]);
-    if (!milestone) {
-      milestone = sorted.find(m => m.benefit && m.benefit[streak.type]);
-    }
-    return milestone && milestone.benefit ? milestone.benefit[streak.type] : null;
+  const getCurrentBenefit = () => {
+    if (!streak?.type) return null;
+    return getCurrentMilestoneBenefit(currentStreak, goal, streak.type);
   };
 
   // Smooth line chart for streak length (static, not interactive)
@@ -177,12 +183,51 @@ const StreakDetailScreen: React.FC = () => {
   };
 
   const handleConfirmToday = async () => {
-    if (!streak) return;
-    await updateStreakProgress(streak.id, currentStreak + 1);
+    if (!streak) {
+      Alert.alert('Error', 'No streak found');
+      return;
+    }
+    
+    try {
+      console.log('Confirming today for streak:', streak.id, 'current:', currentStreak);
+      await updateStreakProgress(streak.id, currentStreak + 1);
+      Alert.alert('Success', 'Streak updated successfully!');
+    } catch (error) {
+      console.error('Error confirming today:', error);
+      Alert.alert('Error', `Failed to update streak: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
+
   const handleReset = async () => {
-    if (!streak?.id) return;
-    await resetStreak(streak.id);
+    if (!streak?.id) {
+      Alert.alert('Error', 'No streak found');
+      return;
+    }
+    
+    Alert.alert(
+      'Reset Streak',
+      'Are you sure you want to reset this streak? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Resetting streak:', streak.id);
+              await resetStreak(streak.id);
+              Alert.alert('Success', 'Streak reset successfully!');
+            } catch (error) {
+              console.error('Error resetting streak:', error);
+              Alert.alert('Error', `Failed to reset streak: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -238,9 +283,9 @@ const StreakDetailScreen: React.FC = () => {
 
         {/* Progress Section */}
         {renderProgressBar()}
-        {getCurrentMilestoneBenefit() && (
+        {getCurrentBenefit() && (
           <View style={styles.milestoneBenefitBox}>
-            <Text style={styles.milestoneBenefitText}>{getCurrentMilestoneBenefit()}</Text>
+            <Text style={styles.milestoneBenefitText}>{getCurrentBenefit()}</Text>
           </View>
         )}
 
