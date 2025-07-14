@@ -27,14 +27,14 @@ const onboardingSteps = [
   {
     key: 'vices',
     title: 'Choose your vices',
-    subtitle: 'Select the vices you want to quit or reduce.\nYou can choose multiple vices to track simultaneously.',
+    subtitle: 'Select the vices you want to quit or reduce.',
     vices: VICES,
   },
   {
     key: 'intro',
     title: 'Track your streaks',
     image: { uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80' },
-    description: 'Track your progress daily and watch your streak grow. Each day you stay on track, you’ll mark it as complete.'
+    description: 'Track your progress daily and watch your streak grow. Each day you stay on track, you\'ll mark it as complete.'
   },
   {
     key: 'progress',
@@ -45,15 +45,22 @@ const onboardingSteps = [
     streak: { type: 'Smoking', day: 12, goal: 30 },
   },
   {
+    key: 'rewards',
+    title: 'Exclusive Rewards',
+    subtitle: 'Luxury rewards for milestones',
+    image: { uri: 'https://images.unsplash.com/photo-1549068106-b024baf5062d?auto=format&fit=crop&w=400&q=80' },
+    description: 'Reach milestone achievements and unlock premium rewards.',
+  },
+  {
     key: 'welcome',
     title: 'Welcome',
     subtitle: 'It takes more than 2 months before a new behavior becomes automatic',
     testimonials: [
-      { name: 'Ethan, 28', text: 'I’ve been smoke-free for 3 months now, thanks to this app!', image: { uri: 'https://randomuser.me/api/portraits/men/32.jpg' }, bg: '#fbe3d3' },
+      { name: 'Ethan, 28', text: 'I\'ve been smoke-free for 3 months now, thanks to this app!', image: { uri: 'https://randomuser.me/api/portraits/men/32.jpg' }, bg: '#fbe3d3' },
       { name: 'Sophia, 24', text: 'This app helped me quit drinking after years of struggling.', image: { uri: 'https://randomuser.me/api/portraits/women/44.jpg' }, bg: '#f8d6d6' },
       { name: 'Liam, 31', text: 'I never thought I could quit, but this app made it possible.', image: { uri: 'https://randomuser.me/api/portraits/men/65.jpg' }, bg: '#e6e6e6' },
     ],
-    description: 'On average, it takes 66 days to be exact. You’re on your way to a healthier you!\n\nYou can do this! We’re here to support you every step of the way.',
+    description: 'On average, it takes 66 days to be exact. You\'re on your way to a healthier you!\n\nYou can do this! We\'re here to support you every step of the way.',
     cta: 'Start your free trial',
     ctaSub: '7-day free trial, then $9.99/month',
   },
@@ -129,42 +136,47 @@ export default function OnboardingScreen() {
           {renderDots()}
           <Text style={styles.title}>{onboardingSteps[0].title}</Text>
           <Text style={styles.subtitle}>{onboardingSteps[0].subtitle}</Text>
-          <FlatList
-            data={onboardingSteps[0].vices}
-            keyExtractor={item => item.key}
-            renderItem={({ item }) => (
+          <View style={styles.vicesContainer}>
+            {onboardingSteps[0].vices?.map((item) => (
               <TouchableOpacity
+                key={item.key}
                 style={[styles.card, selected.includes(item.key) && styles.cardSelected]}
                 onPress={() => toggleVice(item.key)}
                 activeOpacity={0.8}
               >
                 <View style={styles.cardRow}>
-                  <View>
+                  <View style={styles.cardContent}>
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     <Text style={styles.cardDesc}>{item.description}</Text>
                   </View>
                   <View style={selected.includes(item.key) ? styles.radioSelected : styles.radio} />
                 </View>
               </TouchableOpacity>
-            )}
-            style={{ width: '100%' }}
-            contentContainerStyle={{ gap: 16, marginTop: 16, marginBottom: 24, paddingHorizontal: 0 }}
-          />
+            ))}
+          </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
+
         {/* Track your streaks */}
         <View style={[styles.container, { width: SCREEN_WIDTH }]}> 
-          <Text style={styles.title}>{onboardingSteps[1].title}</Text>
+          <Text style={styles.step}>Track Your Streaks</Text>
           {renderDots()}
-          <View style={styles.imageBox}><Image source={onboardingSteps[1].image} style={styles.image} /></View>
+          <Text style={styles.title}>{onboardingSteps[1].title}</Text>
+          <View style={styles.imageBox}>
+            <Image source={onboardingSteps[1].image} style={styles.image} />
+          </View>
           <Text style={styles.description}>{onboardingSteps[1].description}</Text>
         </View>
+
         {/* Daily Progress */}
         <View style={[styles.container, { width: SCREEN_WIDTH }]}> 
-          <Text style={styles.step}>{onboardingSteps[2].title}</Text>
+          <Text style={styles.step}>Daily Progress</Text>
           {renderDots()}
+          <Text style={styles.title}>{onboardingSteps[2].title}</Text>
           <Text style={styles.subtitle}>{onboardingSteps[2].subtitle}</Text>
-          <View style={styles.imageBox}><Image source={onboardingSteps[2].image} style={styles.image} /></View>
+          <View style={styles.imageBox}>
+            <Image source={onboardingSteps[2].image} style={styles.image} />
+          </View>
           <Text style={styles.description}>{onboardingSteps[2].description}</Text>
           <View style={styles.streakCard}>
             <Text style={styles.streakType}>{onboardingSteps[2].streak?.type ?? ''}</Text>
@@ -174,13 +186,27 @@ export default function OnboardingScreen() {
             <TouchableOpacity style={styles.resetBtn}><Text style={styles.resetBtnText}>Reset Streak</Text></TouchableOpacity>
           </View>
         </View>
+
+        {/* Exclusive Rewards */}
+        <View style={[styles.container, { width: SCREEN_WIDTH }]}>
+          <Text style={styles.step}>Exclusive Rewards</Text>
+          {renderDots()}
+          <Text style={styles.title}>{onboardingSteps[3].title}</Text>
+          <Text style={styles.subtitle}>{onboardingSteps[3].subtitle}</Text>
+          <View style={styles.imageBox}>
+            <Image source={onboardingSteps[3].image} style={styles.image} />
+          </View>
+          <Text style={styles.description}>{onboardingSteps[3].description}</Text>
+        </View>
+
         {/* Welcome/testimonials */}
-        <ScrollView style={{ width: SCREEN_WIDTH }} contentContainerStyle={{ alignItems: 'center', flexGrow: 1 }}>
+        <View style={[styles.container, styles.welcomeContainer, { width: SCREEN_WIDTH }]}>
           <Text style={styles.step}>Welcome</Text>
           {renderDots()}
-          <Text style={styles.subtitle}>{onboardingSteps[3].subtitle}</Text>
+          <Text style={styles.title}>{onboardingSteps[4].title}</Text>
+          <Text style={styles.subtitle}>{onboardingSteps[4].subtitle}</Text>
           <View style={styles.testimonialsRow}>
-            {onboardingSteps[3].testimonials?.map((t, i) => (
+            {onboardingSteps[4].testimonials?.map((t, i) => (
               <View key={i} style={[styles.testimonialCard, { backgroundColor: t.bg }]}> 
                 <Image source={t.image} style={styles.testimonialImg} />
                 <Text style={styles.testimonialName}>{t.name}</Text>
@@ -188,9 +214,9 @@ export default function OnboardingScreen() {
               </View>
             ))}
           </View>
-          <Text style={styles.description}>{onboardingSteps[3].description}</Text>
-          <Text style={styles.ctaSub}>{onboardingSteps[3].ctaSub}</Text>
-        </ScrollView>
+          <Text style={styles.description}>{onboardingSteps[4].description}</Text>
+          <Text style={styles.ctaSub}>{onboardingSteps[4].ctaSub}</Text>
+        </View>
       </ScrollView>
       <View style={styles.bottomRow}>
         {step > 0 && (
@@ -199,7 +225,7 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-          <Text style={styles.nextBtnText}>{step === onboardingSteps.length - 1 ? 'Finish' : 'Next'}</Text>
+          <Text style={styles.nextBtnText}>{step === onboardingSteps.length - 1 ? '100$/month' : 'Next'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -215,30 +241,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#181410',
     alignItems: 'center',
-    paddingTop: 48,
-    paddingHorizontal: 16,
+    paddingTop: 32,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  welcomeContainer: {
+    paddingTop: 56,
   },
   bottomRow: {
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 16,
   },
   step: {
     color: '#fff',
     fontFamily: 'Space Grotesk-Bold',
-    fontSize: 18,
-    marginBottom: 8,
+    fontSize: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   dots: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   dot: {
     width: 8,
@@ -257,25 +287,33 @@ const styles = StyleSheet.create({
   title: {
     color: '#fff',
     fontFamily: 'Space Grotesk-Bold',
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 28,
+    marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     color: '#ababab',
     fontFamily: 'Space Grotesk',
-    fontSize: 15,
-    marginBottom: 12,
+    fontSize: 16,
+    marginBottom: 32,
     textAlign: 'center',
+    lineHeight: 24,
+  },
+  vicesContainer: {
+    width: '100%',
+    gap: 16,
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: 8,
   },
   imageBox: {
     width: '100%',
-    aspectRatio: 1,
+    height: 200,
     backgroundColor: '#fbe3d3',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
     overflow: 'hidden',
   },
   image: {
@@ -287,15 +325,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Space Grotesk',
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 24,
     textAlign: 'center',
+    lineHeight: 24,
   },
   streakCard: {
     backgroundColor: '#23201c',
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
-    marginVertical: 16,
+    marginBottom: 20,
+    width: '100%',
   },
   streakType: {
     color: '#fff',
@@ -309,19 +349,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   rowBtns: {
-    flexDirection: 'row',
     width: '100%',
-    justifyContent: 'space-between',
     marginTop: 16,
   },
   resetBtn: {
-    flex: 1,
+    width: '100%',
     height: 48,
     borderRadius: 24,
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
   },
   resetBtnText: {
     color: '#fff',
@@ -336,7 +373,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
-    marginTop: 8,
   },
   nextBtnText: {
     color: '#fff',
@@ -346,15 +382,16 @@ const styles = StyleSheet.create({
   testimonialsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 16,
-    gap: 8,
+    marginVertical: 24,
+    gap: 12,
+    width: '100%',
   },
   testimonialCard: {
     borderRadius: 16,
-    padding: 12,
+    padding: 16,
     alignItems: 'center',
-    width: 110,
-    marginHorizontal: 4,
+    flex: 1,
+    minWidth: 0,
   },
   testimonialImg: {
     width: 48,
@@ -366,28 +403,30 @@ const styles = StyleSheet.create({
     color: '#181410',
     fontFamily: 'Space Grotesk-Bold',
     fontSize: 14,
-    marginBottom: 2,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   testimonialText: {
     color: '#181410',
     fontFamily: 'Space Grotesk',
     fontSize: 12,
     textAlign: 'center',
+    lineHeight: 16,
   },
   ctaSub: {
     color: '#ababab',
     fontFamily: 'Space Grotesk',
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 14,
+    marginTop: 16,
     textAlign: 'center',
   },
   card: {
     borderWidth: 1,
     borderColor: '#333',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     backgroundColor: '#181410',
-    marginBottom: 0,
+    width: '100%',
   },
   cardSelected: {
     borderColor: '#fff',
@@ -397,34 +436,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 48,
+  },
+  cardContent: {
+    flex: 1,
+    marginRight: 16,
   },
   cardTitle: {
     color: '#fff',
     fontFamily: 'Space Grotesk-Bold',
-    fontSize: 16,
-    marginBottom: 2,
+    fontSize: 18,
+    marginBottom: 4,
   },
   cardDesc: {
     color: '#ababab',
     fontFamily: 'Space Grotesk',
-    fontSize: 13,
-    marginBottom: 0,
+    fontSize: 14,
+    lineHeight: 20,
   },
   radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#333',
     backgroundColor: 'transparent',
+    alignSelf: 'center',
   },
   radioSelected: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#fff',
     backgroundColor: '#fff',
+    alignSelf: 'center',
   },
   backBtn: {
     flex: 1,
@@ -434,7 +480,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-    marginTop: 8,
   },
   backBtnText: {
     color: '#fff',
@@ -445,7 +490,35 @@ const styles = StyleSheet.create({
     color: '#ff6a00',
     fontFamily: 'Space Grotesk',
     fontSize: 14,
-    marginBottom: 8,
+    marginTop: 16,
     textAlign: 'center',
+  },
+  rewardsList: {
+    width: '100%',
+    marginTop: 24,
+    gap: 12,
+  },
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#23201c',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+  },
+  rewardIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  rewardMilestone: {
+    color: '#fff',
+    fontFamily: 'Space Grotesk-Bold',
+    fontSize: 16,
+    marginRight: 12,
+  },
+  rewardReward: {
+    color: '#ff6a00',
+    fontFamily: 'Space Grotesk-Bold',
+    fontSize: 16,
   },
 }); 
