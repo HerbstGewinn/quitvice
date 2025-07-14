@@ -170,7 +170,7 @@ export default function SignUpScreen() {
           )}
           {/* Optional: Register later or restore progress */}
           <View style={styles.laterBox}>
-            <Text style={styles.laterText}>or <Text style={styles.laterLink}>Register later</Text></Text>
+            <Text style={styles.laterText}>or <Text style={styles.laterLink}>No Account yet ? Register Now !</Text></Text>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>

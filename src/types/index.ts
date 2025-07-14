@@ -79,6 +79,8 @@ export interface SupabaseConfig {
 }
 
 export type RootStackParamList = {
+  SignUp: undefined;
+  Onboarding: undefined;
   Home: undefined;
   StreakDetail: StreakDetailParams;
   Profile: undefined;

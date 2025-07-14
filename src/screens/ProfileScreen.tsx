@@ -9,6 +9,7 @@ import {
   Switch,
   SafeAreaView,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -22,7 +23,7 @@ type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Prof
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
-  const { user } = useApp();
+  const { user, logout } = useApp();
   
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(true);
@@ -31,9 +32,33 @@ const ProfileScreen: React.FC = () => {
     navigation.goBack();
   };
 
-  const handleExportData = () => {
-    // TODO: Implement data export functionality
-    console.log('Export data pressed');
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout? You can always sign back in to access your streaks.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              // Navigate to the sign up screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignUp' }],
+              });
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handlePrivacyPolicy = () => {
@@ -126,10 +151,10 @@ const ProfileScreen: React.FC = () => {
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity 
-            style={styles.exportButton}
-            onPress={handleExportData}
+            style={styles.logoutButton}
+            onPress={handleLogout}
           >
-            <Text style={styles.exportButtonText}>Export Data</Text>
+            <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
           
           <View style={styles.legalLinks}>
@@ -321,6 +346,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exportButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    lineHeight: 16,
+    letterSpacing: 0.015,
+    fontFamily: 'Space Grotesk-Bold',
+  },
+  logoutButton: {
+    minWidth: 84,
+    maxWidth: 480,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: '#dc3545',
+    marginBottom: 8,
+  },
+  logoutButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 'bold',

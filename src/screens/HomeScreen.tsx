@@ -15,8 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { useApp } from '@/context/AppContext';
-import { RootStackParamList, StreakType, Milestone } from '@/types';
-import { streakService } from '@/services/supabase';
+import { RootStackParamList, StreakType, Milestone, StreakAttempt } from '@/types';
+import { streakService, attemptService } from '@/services/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -38,12 +38,29 @@ const HomeScreen: React.FC = () => {
   const [recentMilestone, setRecentMilestone] = useState<Milestone | null>(null);
   const [showMilestoneNotification, setShowMilestoneNotification] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const [pastStreaks, setPastStreaks] = useState<Array<{
+    type: StreakType;
+    name: string;
+    icon: string;
+    completed: boolean;
+    days: number;
+    totalAttempts: number;
+  }>>([]);
+  const [loadingPastStreaks, setLoadingPastStreaks] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadUserStreaks();
+      loadPastStreaks();
     }
   }, [user]);
+
+  // Reload past streaks when streaks change (e.g., after reset)
+  useEffect(() => {
+    if (user && streaks.length > 0) {
+      loadPastStreaks();
+    }
+  }, [streaks]);
 
   useEffect(() => {
     // Check for recent milestones
@@ -170,51 +187,127 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 
-  const pastStreaksMock = [
-    {
-      type: 'smoking',
-      name: 'Smoking',
-      icon: '🔥',
-      completed: false,
-      days: 18,
-    },
-    {
-      type: 'drinking',
-      name: 'Drinking',
-      icon: '🍷',
-      completed: false,
-      days: 22,
-    },
-    {
-      type: 'porn',
-      name: 'Pornography',
-      icon: '🎬',
-      completed: true,
-      days: 66,
-    },
-  ];
+  // Load past streaks from streak_attempts
+  const loadPastStreaks = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setLoadingPastStreaks(true);
+      console.log('Loading past streaks for user:', user.id);
+      
+      // Get all streak types and their past attempts
+      const streakTypes: StreakType[] = ['smoking', 'drinking', 'porn'];
+      const pastStreaksData = await Promise.all(
+        streakTypes.map(async (type) => {
+          // Find the current streak for this type
+          const currentStreak = streaks.find(s => s.type === type);
+          
+          if (currentStreak) {
+            // Get all attempts for this streak
+            const attempts = await attemptService.getStreakAttempts(currentStreak.id);
+            console.log(`Attempts for ${type}:`, attempts);
+            
+            // Find the best attempt (highest duration or any completed one)
+            let bestAttempt: StreakAttempt | null = null;
+            let hasCompleted = false;
+            
+            for (const attempt of attempts) {
+              if (attempt.isCompleted) {
+                hasCompleted = true;
+                bestAttempt = attempt;
+                break; // If completed, use the completed one
+              } else if (!bestAttempt || attempt.duration > bestAttempt.duration) {
+                bestAttempt = attempt;
+              }
+            }
+            
+            const streakTypeNames = {
+              smoking: 'Smoking',
+              drinking: 'Drinking',
+              porn: 'Pornography'
+            };
+            
+            const icons = {
+              smoking: '🔥',
+              drinking: '🍷',
+              porn: '🎬'
+            };
+            
+            return {
+              type,
+              name: streakTypeNames[type],
+              icon: icons[type],
+              completed: hasCompleted,
+              days: bestAttempt?.duration || 0,
+              totalAttempts: attempts.length,
+            };
+          }
+          
+          return null;
+        })
+      );
+      
+      // Filter out null values and only show streaks that have attempts
+      const filteredPastStreaks = pastStreaksData
+        .filter((streak): streak is NonNullable<typeof streak> => 
+          streak !== null && (streak.totalAttempts > 0 || streak.days > 0)
+        );
+      
+      console.log('Past streaks data:', filteredPastStreaks);
+      setPastStreaks(filteredPastStreaks);
+    } catch (error) {
+      console.error('Error loading past streaks:', error);
+    } finally {
+      setLoadingPastStreaks(false);
+    }
+  };
 
-  const renderPastStreaks = () => (
-    <View style={styles.pastStreaksSection}>
-      <Text style={styles.pastStreaksTitle}>Past Streaks</Text>
-      {pastStreaksMock.map((streak, idx) => (
-        <View key={streak.type} style={styles.pastStreakCard}>
-          <View style={styles.pastStreakIconBox}>
-            <Text style={styles.pastStreakIcon}>{streak.icon}</Text>
+  const renderPastStreaks = () => {
+    if (loadingPastStreaks) {
+      return (
+        <View style={styles.pastStreaksSection}>
+          <Text style={styles.pastStreaksTitle}>Past Streaks</Text>
+          <View style={styles.loadingPastStreaksContainer}>
+            <ActivityIndicator size="small" color="#ff6a00" />
+            <Text style={styles.loadingPastStreaksText}>Loading past streaks...</Text>
           </View>
-          <View style={styles.pastStreakInfo}>
-            <Text style={styles.pastStreakName}>{streak.name}</Text>
-            <Text style={styles.pastStreakStatus}>
-              {streak.completed
-                ? `Completed ${streak.days} days`
-                : `Uncompleted`}
-            </Text>
-          </View>
-          {streak.completed && <Text style={styles.pastStreakCheck}>✓</Text>}
         </View>
-      ))}
-    </View>
-  );
+      );
+    }
+
+    if (pastStreaks.length === 0) {
+      return (
+        <View style={styles.pastStreaksSection}>
+          <Text style={styles.pastStreaksTitle}>Past Streaks</Text>
+          <View style={styles.emptyPastStreaksContainer}>
+            <Text style={styles.emptyPastStreaksText}>No past attempts yet. Start your first streak!</Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.pastStreaksSection}>
+        <Text style={styles.pastStreaksTitle}>Past Streaks</Text>
+        {pastStreaks.map((streak) => (
+          <View key={streak.type} style={styles.pastStreakCard}>
+            <View style={styles.pastStreakIconBox}>
+              <Text style={styles.pastStreakIcon}>{streak.icon}</Text>
+            </View>
+            <View style={styles.pastStreakInfo}>
+              <Text style={styles.pastStreakName}>{streak.name}</Text>
+              <Text style={styles.pastStreakStatus}>
+                {streak.completed
+                  ? `Completed ${streak.days} days`
+                  : `Uncompleted`}
+              </Text>
+            </View>
+            {streak.completed && <Text style={styles.pastStreakCheck}>✓</Text>}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -531,6 +624,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 22,
     marginLeft: 8,
+  },
+  loadingPastStreaksContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  loadingPastStreaksText: {
+    color: '#bca89a',
+    fontSize: 14,
+    marginLeft: 8,
+    fontFamily: 'Space Grotesk',
+  },
+  emptyPastStreaksContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  emptyPastStreaksText: {
+    color: '#bca89a',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk',
   },
 });
 

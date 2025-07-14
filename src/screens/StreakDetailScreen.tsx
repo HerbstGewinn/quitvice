@@ -57,6 +57,27 @@ const StreakDetailScreen: React.FC = () => {
     porn: 'Quit Pornography'
   };
 
+  // Load streak attempts when component mounts or streak changes
+  useEffect(() => {
+    const loadAttempts = async () => {
+      if (!streak?.id) return;
+      
+      try {
+        setLoadingAttempts(true);
+        console.log('Loading attempts for streak:', streak.id);
+        const streakAttempts = await attemptService.getStreakAttempts(streak.id);
+        console.log('Loaded attempts:', streakAttempts);
+        setAttempts(streakAttempts);
+      } catch (error) {
+        console.error('Failed to load streak attempts:', error);
+      } finally {
+        setLoadingAttempts(false);
+      }
+    };
+
+    loadAttempts();
+  }, [streak?.id]);
+
   const getBackgroundImage = (type: StreakType): string => {
     const images = {
       smoking: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxDFku5EC0mxoMYB-z_EEtcsTg3NxBYnHQslokxHrBKQkHhtQ1I1dZ4Zu9HVfYPIONQQtYOanmNKQ3K12GNfNQsLqJntyVVrQy1zsAE9BEJbmB_t5uClTbR3R7FEeY1NTFlCGjfNFVVmqlX6cnlYiVDnyLihL-Dgyp_wEh3tXmLsHBGfUvnShpSLRlp5PnSsqabMHidzk_BraJ16HoRPq6WVL6sGw_ZDhapdff7grIUJMaiElothOzOS_kMBpJ9g4AXpSsmAI_AUw',
@@ -140,17 +161,40 @@ const StreakDetailScreen: React.FC = () => {
     return getCurrentMilestoneBenefit(currentStreak, goal, streak.type);
   };
 
-  // Smooth line chart for streak length (static, not interactive)
+  // Smooth line chart for streak length using real attempt data
   const renderHistoryChart = () => {
-    // Mock data: 5 values, can be replaced with real attempt durations
-    const attemptDurations = [12, 18, 9, 22, 17];
-    const maxValue = Math.max(...attemptDurations, 1);
+    // Use real attempt data, get last 5 attempts
+    const last5Attempts = attempts.slice(0, 5);
+    
+    // If we have fewer than 5 attempts, pad with current streak or zeros
+    const attemptDurations: number[] = [];
+    
+    // Add existing attempts (duration in days)
+    last5Attempts.forEach(attempt => {
+      attemptDurations.push(attempt.duration);
+    });
+    
+    // If we have current streak and fewer than 5 attempts, add current streak
+    if (attemptDurations.length < 5 && currentStreak > 0) {
+      attemptDurations.push(currentStreak);
+    }
+    
+    // Pad with zeros if we still have fewer than 5 data points
+    while (attemptDurations.length < 5) {
+      attemptDurations.unshift(0);
+    }
+    
+    // Take only the last 5 to ensure we have exactly 5 points
+    const chartData = attemptDurations.slice(-5);
+    
+    const maxValue = Math.max(...chartData, 1);
     const chartHeight = 120;
     const chartWidth = 260;
-    const points: [number, number][] = attemptDurations.map((v, i) => [
+    const points: [number, number][] = chartData.map((v, i) => [
       (i / 4) * (chartWidth - 1),
       chartHeight - (v / maxValue) * (chartHeight - 10) // 10px padding top
     ]);
+    
     // Create smooth SVG path
     const getPath = (pts: [number, number][]): string => {
       if (pts.length < 2) return '';
@@ -163,6 +207,7 @@ const StreakDetailScreen: React.FC = () => {
       }
       return d;
     };
+    
     return (
       <View style={styles.historyChartContainer}>
         <Svg width={chartWidth} height={chartHeight}>
@@ -220,6 +265,12 @@ const StreakDetailScreen: React.FC = () => {
               console.log('Resetting streak:', streak.id);
               await resetStreak(streak.id);
               Alert.alert('Success', 'Streak reset successfully!');
+              
+              // Reload attempts to show the new attempt record
+              if (streak.id) {
+                const streakAttempts = await attemptService.getStreakAttempts(streak.id);
+                setAttempts(streakAttempts);
+              }
             } catch (error) {
               console.error('Error resetting streak:', error);
               Alert.alert('Error', `Failed to reset streak: ${error instanceof Error ? error.message : 'Unknown error'}`);
