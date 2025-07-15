@@ -10,6 +10,7 @@ import { AppProvider } from '@/context/AppContext';
 import HomeScreen from '@/screens/HomeScreen';
 import StreakDetailScreen from '@/screens/StreakDetailScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
+import CommunityScreen from '@/screens/CommunityScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { StreakDetailParams } from '@/types';
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   Home: undefined;
   StreakDetail: StreakDetailParams;
   Profile: undefined;
+  Community: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -72,6 +74,7 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="StreakDetail" component={StreakDetailScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Community" component={CommunityScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

@@ -84,4 +84,5 @@ export type RootStackParamList = {
   Home: undefined;
   StreakDetail: StreakDetailParams;
   Profile: undefined;
+  Community: undefined;
 }; 

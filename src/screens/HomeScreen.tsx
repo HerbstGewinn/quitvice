@@ -114,6 +114,10 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Profile');
   };
 
+  const handleCommunityPress = () => {
+    navigation.navigate('Community');
+  };
+
   const getStreakData = (type: StreakType) => {
     return streaks.find(streak => streak.type === type);
   };
@@ -373,10 +377,10 @@ const HomeScreen: React.FC = () => {
         {renderPastStreaks()}
       </ScrollView>
 
-      {/* Add Button */}
+      {/* Community Button */}
       <View style={styles.addButtonContainer}>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addButtonIcon}>+</Text>
+        <TouchableOpacity style={styles.addButton} onPress={handleCommunityPress}>
+          <Text style={styles.addButtonIcon}>CC</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

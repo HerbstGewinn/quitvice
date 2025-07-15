@@ -132,7 +132,7 @@ export default function OnboardingScreen() {
       >
         {/* Vices selection */}
         <View style={[styles.container, { width: SCREEN_WIDTH }]}> 
-          <Text style={styles.step}>Select Your Vices</Text>
+        <Text style={styles.step}>Select Your Vices</Text>
           {renderDots()}
           <Text style={styles.title}>{onboardingSteps[0].title}</Text>
           <Text style={styles.subtitle}>{onboardingSteps[0].subtitle}</Text>
