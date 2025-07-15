@@ -19,14 +19,11 @@ type CommunityScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Co
 
 interface CommunityUser {
   id: string;
-  handle: string;
-  avatar: string;
-  streaks: {
-    type: StreakType;
-    currentStreak: number;
-    icon: string;
-  }[];
-  totalDays: number;
+  name: string;
+  email: string;
+  highestStreak: number;
+  streakType: StreakType;
+  streakIcon: string;
 }
 
 const CommunityScreen: React.FC = () => {
@@ -45,27 +42,72 @@ const CommunityScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Call the Supabase function to get community leaderboard
-      const { data, error: supabaseError } = await supabase
-        .rpc('get_community_leaderboard', { limit_count: 100 });
+      // Get all users with their streaks
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select(`
+          id,
+          name,
+          email,
+          streaks:streaks(
+            type,
+            current_streak,
+            is_active
+          )
+        `)
+        .order('name');
 
-      if (supabaseError) {
-        console.error('Supabase error:', supabaseError);
-        throw new Error(supabaseError.message);
+      if (usersError) {
+        console.error('Supabase error:', usersError);
+        throw new Error(usersError.message);
       }
 
-      // Transform the data to match our CommunityUser interface
-      const transformedUsers: CommunityUser[] = (data || []).map((row: any) => ({
-        id: row.user_id,
-        handle: row.handle || 'Anonymous',
-        avatar: row.avatar_emoji || '🔥',
-        streaks: [
-          ...(row.smoking_streak > 0 ? [{ type: 'smoking' as StreakType, currentStreak: row.smoking_streak, icon: '🚬' }] : []),
-          ...(row.drinking_streak > 0 ? [{ type: 'drinking' as StreakType, currentStreak: row.drinking_streak, icon: '🍺' }] : []),
-          ...(row.porn_streak > 0 ? [{ type: 'porn' as StreakType, currentStreak: row.porn_streak, icon: '📱' }] : []),
-        ],
-        totalDays: row.total_days || 0,
-      }));
+      // Transform the data to get each user's highest streak
+      const validUsers: CommunityUser[] = [];
+      
+      (usersData || []).forEach((userData: any) => {
+        const activeStreaks = userData.streaks?.filter((s: any) => s.is_active) || [];
+        
+        if (activeStreaks.length === 0) {
+          return; // Skip users with no active streaks
+        }
+
+        // Find the highest current streak
+        let highestStreak = 0;
+        let streakType: StreakType = 'smoking';
+        
+        activeStreaks.forEach((streak: any) => {
+          if (streak.current_streak > highestStreak) {
+            highestStreak = streak.current_streak;
+            streakType = streak.type;
+          }
+        });
+
+        if (highestStreak === 0) {
+          return; // Skip users with 0 streaks
+        }
+
+        const getStreakIcon = (type: StreakType): string => {
+          const icons = {
+            smoking: '🚬',
+            drinking: '🍺',
+            porn: '📱'
+          };
+          return icons[type];
+        };
+
+        validUsers.push({
+          id: userData.id,
+          name: userData.name || 'Anonymous',
+          email: userData.email,
+          highestStreak,
+          streakType,
+          streakIcon: getStreakIcon(streakType),
+        });
+      });
+
+      // Sort by highest streak descending
+      const transformedUsers = validUsers.sort((a, b) => b.highestStreak - a.highestStreak);
 
       setCommunityUsers(transformedUsers);
     } catch (err: any) {
@@ -89,31 +131,23 @@ const CommunityScreen: React.FC = () => {
     return names[type];
   };
 
-  const renderUserCard = (user: CommunityUser, index: number) => (
-    <View key={user.id} style={styles.userCard}>
+  const renderUserCard = (userData: CommunityUser, index: number) => (
+    <View key={userData.id} style={styles.userCard}>
       <View style={styles.userRank}>
         <Text style={styles.rankNumber}>#{index + 1}</Text>
       </View>
       
-      <View style={styles.userAvatar}>
-        <Text style={styles.avatarIcon}>{user.avatar}</Text>
-      </View>
-      
       <View style={styles.userInfo}>
-        <Text style={styles.userHandle}>{user.handle}</Text>
-        <Text style={styles.totalDays}>{user.totalDays} total days</Text>
-        
-        <View style={styles.streaksContainer}>
-          {user.streaks.map((streak) => (
-            <View key={streak.type} style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>{streak.icon}</Text>
-              <Text style={styles.streakDays}>{streak.currentStreak}d</Text>
-            </View>
-          ))}
+        <Text style={styles.userName}>{userData.name}</Text>
+        <View style={styles.streakInfo}>
+          <Text style={styles.streakIcon}>{userData.streakIcon}</Text>
+          <Text style={styles.streakText}>
+            {userData.highestStreak} days - {getStreakTypeNames(userData.streakType)}
+          </Text>
         </View>
       </View>
       
-      {user.id === user?.id && (
+      {userData.id === user?.id && (
         <View style={styles.youBadge}>
           <Text style={styles.youText}>YOU</Text>
         </View>
@@ -172,12 +206,18 @@ const CommunityScreen: React.FC = () => {
       </View>
 
       <View style={styles.statsHeader}>
-        <Text style={styles.statsTitle}>Elite 100 Leaderboard</Text>
-        <Text style={styles.statsSubtitle}>{communityUsers.length}/100 members committed</Text>
+        <Text style={styles.statsTitle}>Leaderboard</Text>
+        <Text style={styles.statsSubtitle}>Highest current streaks</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {communityUsers.map((user, index) => renderUserCard(user, index))}
+        {communityUsers.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No active streaks found</Text>
+          </View>
+        ) : (
+          communityUsers.map((userData, index) => renderUserCard(userData, index))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -260,57 +300,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Space Grotesk-Bold',
   },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#181410',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-    borderWidth: 2,
-    borderColor: '#ff6a00',
-  },
-  avatarIcon: {
-    fontSize: 24,
-  },
   userInfo: {
     flex: 1,
   },
-  userHandle: {
+  userName: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
     fontFamily: 'Space Grotesk-Bold',
     marginBottom: 4,
   },
-  totalDays: {
+  streakInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  streakText: {
     color: '#bca89a',
     fontSize: 14,
     fontFamily: 'Space Grotesk',
-    marginBottom: 8,
-  },
-  streaksContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#181410',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  streakIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  streakDays: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'Space Grotesk-Bold',
   },
   youBadge: {
     backgroundColor: '#ff6a00',
@@ -360,6 +371,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     fontFamily: 'Space Grotesk-Bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: '#bca89a',
+    fontSize: 16,
+    fontFamily: 'Space Grotesk',
   },
 });
 
