@@ -1,4 +1,4 @@
-# QuitStreakCoach
+# Vices
 
 A widget-first, poster-style mobile coach app that helps users complete 30-, 66- and 99-day "quit streaks" for smoking, drinking and pornography.
 
