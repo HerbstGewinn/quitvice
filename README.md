@@ -1,4 +1,4 @@
-# QuitStreakCoach
+# Vices
 
 A widget-first, poster-style mobile coach app that helps users complete 30-, 66- and 99-day "quit streaks" for smoking, drinking and pornography.
 
@@ -263,7 +263,11 @@ expo build:web
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Copyright (c) [2025] [Laurin Herbst / Herbst OÜ]
+
+All rights reserved.
+
+This source code and all associated files are the exclusive property of [Laurin Herbst / Herbst OÜ] and may not be used, copied, modified, merged, published, distributed, sublicensed, or sold in whole or in part without the express written permission of the copyright owner.
 
 ## Support
 
