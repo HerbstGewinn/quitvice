@@ -131,6 +131,8 @@ const HomeScreen: React.FC = () => {
     return icons[type];
   };
 
+  
+
   const getBackgroundImage = (type: StreakType): string => {
     const images = {
       smoking: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxDFku5EC0mxoMYB-z_EEtcsTg3NxBYnHQslokxHrBKQkHhtQ1I1dZ4Zu9HVfYPIONQQtYOanmNKQ3K12GNfNQsLqJntyVVrQy1zsAE9BEJbmB_t5uClTbR3R7FEeY1NTFlCGjfNFVVmqlX6cnlYiVDnyLihL-Dgyp_wEh3tXmLsHBGfUvnShpSLRlp5PnSsqabMHidzk_BraJ16HoRPq6WVL6sGw_ZDhapdff7grIUJMaiElothOzOS_kMBpJ9g4AXpSsmAI_AUw',

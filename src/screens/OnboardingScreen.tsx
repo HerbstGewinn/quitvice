@@ -126,20 +126,15 @@ const OnboardingScreen = () => {
                 
                 if (result.success) {
                   // Save selected vices to database
-                  if (user) {
-                    await import('@/services/supabase').then(({ supabase }) =>
-                      supabase.from('users').update({ vices: selected }).eq('id', user.id)
-                    );
-                  }
-                  
-                  // Navigate to home
-                  navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+                  await saveUserVicesAndProceed();
                 } else {
-                  setError(result.error || 'Purchase failed');
+                  // Payment failed - show fallback option
+                  showPaymentFailedFallback(result.error || 'Purchase failed');
                 }
               } catch (purchaseError: any) {
                 console.error('Purchase error:', purchaseError);
-                setError(purchaseError.message || 'Purchase failed');
+                // Payment failed - show fallback option
+                showPaymentFailedFallback(purchaseError.message || 'Purchase failed');
               } finally {
                 setIsProcessingPayment(false);
               }
@@ -149,9 +144,48 @@ const OnboardingScreen = () => {
       );
     } catch (error: any) {
       console.error('Subscription setup error:', error);
-      setError(error.message || 'Failed to setup subscription');
-      setIsProcessingPayment(false);
+      // Setup failed - show fallback option
+      showPaymentFailedFallback(error.message || 'Failed to setup subscription');
     }
+  };
+
+  const saveUserVicesAndProceed = async () => {
+    try {
+      // Save selected vices to database
+      if (user) {
+        await import('@/services/supabase').then(({ supabase }) =>
+          supabase.from('users').update({ vices: selected }).eq('id', user.id)
+        );
+      }
+      
+      // Navigate to home
+      navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+    } catch (error) {
+      console.error('Failed to save user vices:', error);
+      // Even if saving vices fails, still proceed to app
+      navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+    }
+  };
+
+  const showPaymentFailedFallback = (errorMessage: string) => {
+    Alert.alert(
+      'Payment Issue',
+      `${errorMessage}\n\nWould you like to:\n• Try again later\n• Continue to the app (testing mode)`,
+      [
+        {
+          text: 'Try Again',
+          onPress: () => setIsProcessingPayment(false)
+        },
+        {
+          text: 'Continue to App',
+          style: 'default',
+          onPress: async () => {
+            // Proceed to app even without payment
+            await saveUserVicesAndProceed();
+          }
+        }
+      ]
+    );
   };
 
   const handleNext = async () => {
@@ -300,6 +334,23 @@ const OnboardingScreen = () => {
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}
+        
+        {/* Testing bypass button - only show on final step */}
+        {step === onboardingSteps.length - 1 && (
+          <TouchableOpacity 
+            style={styles.bypassBtn} 
+            onPress={async () => {
+              if (selected.length === 0) {
+                setError('Please select at least one vice.');
+                return;
+              }
+              await saveUserVicesAndProceed();
+            }}
+          >
+            <Text style={styles.bypassBtnText}>Skip Payment</Text>
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity 
           style={[styles.nextBtn, isProcessingPayment && styles.nextBtnDisabled]} 
           onPress={handleNext}
@@ -610,6 +661,20 @@ const styles = StyleSheet.create({
     color: '#ff6a00',
     fontFamily: 'Space Grotesk-Bold',
     fontSize: 16,
+  },
+  bypassBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#666', // Gray color for testing button
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
+  },
+  bypassBtnText: {
+    color: '#fff',
+    fontFamily: 'Space Grotesk-Bold',
+    fontSize: 14,
   },
 });
 
