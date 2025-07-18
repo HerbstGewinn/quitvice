@@ -76,13 +76,13 @@ export default function SignUpScreen() {
           {/* Stats Container */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>$100</Text>
+              <Text style={styles.statNumber}>$50</Text>
               <Text style={styles.statLabel}>Monthly</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>Limit</Text>
-              <Text style={styles.statLabel}>100 Users</Text>
+              <Text style={styles.statLabel}>250 Users</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -99,7 +99,7 @@ export default function SignUpScreen() {
               {isSignUp && (
                 <TextInput
                   style={styles.input}
-                  placeholder="Full Name"
+                  placeholder="Username"
                   placeholderTextColor="#666"
                   value={name}
                   onChangeText={setName}

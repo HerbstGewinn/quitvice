@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "version": ">= 16.16.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "store",
+      "autoIncrement": true
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {},
+    "preview": {
+      "ios": {
+        "appleId": "laurin.herbst@icloud.com",
+        "ascAppId": "6748744082",
+        "appleTeamId": "Y8FT42RK46"
+      }
+    }
+  }
+}

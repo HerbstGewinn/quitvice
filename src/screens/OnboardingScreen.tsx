@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, ScrollView, Dimensions, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '@/context/AppContext';
+import RevenueCatService from '@/services/revenuecat';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,7 +40,6 @@ const onboardingSteps = [
   {
     key: 'progress',
     title: 'Daily Progress',
-    subtitle: 'Track your progress',
     image: { uri: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80' },
     description: 'Stay motivated by seeing your daily progress and streaks. Reset your streak if needed.',
     streak: { type: 'Smoking', day: 12, goal: 30 },
@@ -47,51 +47,122 @@ const onboardingSteps = [
   {
     key: 'rewards',
     title: 'Exclusive Rewards',
-    subtitle: 'Luxury rewards for milestones',
-    image: { uri: 'https://images.unsplash.com/photo-1549068106-b024baf5062d?auto=format&fit=crop&w=400&q=80' },
-    description: 'Reach milestone achievements and unlock premium rewards.',
+    image: { uri: 'https://images.unsplash.com/photo-1591213954508-2d0e0aec1a1b?auto=format&fit=crop&w=400&q=80' },
+    description: 'Unlock exclusive rewards as you reach milestones. Premium wellness kits, spa experiences, and more await elite members.',
   },
   {
-    key: 'welcome',
-    title: 'Welcome',
-    subtitle: 'It takes more than 2 months before a new behavior becomes automatic',
-    testimonials: [
-      { name: 'Ethan, 28', text: 'I\'ve been smoke-free for 3 months now, thanks to this app!', image: { uri: 'https://randomuser.me/api/portraits/men/32.jpg' }, bg: '#fbe3d3' },
-      { name: 'Sophia, 24', text: 'This app helped me quit drinking after years of struggling.', image: { uri: 'https://randomuser.me/api/portraits/women/44.jpg' }, bg: '#f8d6d6' },
-      { name: 'Liam, 31', text: 'I never thought I could quit, but this app made it possible.', image: { uri: 'https://randomuser.me/api/portraits/men/65.jpg' }, bg: '#e6e6e6' },
-    ],
-    description: 'On average, it takes 66 days to be exact. You\'re on your way to a healthier you!\n\nYou can do this! We\'re here to support you every step of the way.',
-    cta: 'Start your free trial',
-    ctaSub: '7-day free trial, then $9.99/month',
+    key: 'commitment',
+    title: 'Your commitment',
+    subtitle: 'Elite membership access',
+    description: '$50/month commitment contract with luxury rewards and accountability.',
   },
 ];
 
-export default function OnboardingScreen() {
+const OnboardingScreen = () => {
   const navigation = useNavigation();
   const { user } = useApp();
   const [selected, setSelected] = useState<string[]>(['smoking']);
   const [error, setError] = useState('');
   const [step, setStep] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const toggleVice = (key: string) => {
     setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
+  const handlePurchaseSubscription = async () => {
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+
+    try {
+      setIsProcessingPayment(true);
+      setError('');
+
+      // Initialize RevenueCat
+      await RevenueCatService.initialize(user.id);
+
+      // Get available offerings
+      const offerings = await RevenueCatService.getOfferings();
+      
+      if (offerings.length === 0) {
+        throw new Error('No subscription packages available');
+      }
+
+      // Look for the 'vices' offering (from your RevenueCat config)
+      const vicesOffering = offerings.find(offering => offering.identifier === 'vices');
+      
+      if (!vicesOffering) {
+        throw new Error('Vices offering not found');
+      }
+
+      // Look for the '$rc_monthly' package (from your RevenueCat config)
+      const monthlyPackage = vicesOffering.availablePackages.find(
+        pkg => pkg.identifier === '$rc_monthly'
+      );
+
+      if (!monthlyPackage) {
+        throw new Error('Monthly subscription package not found');
+      }
+
+      // Show confirmation dialog
+      Alert.alert(
+        'Confirm Subscription',
+        `Subscribe to Vices Elite for $100/month?\n\nYou'll get:\n• Access to exclusive community\n• Luxury milestone rewards\n• Premium accountability features`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setIsProcessingPayment(false)
+          },
+          {
+            text: 'Subscribe',
+            onPress: async () => {
+              try {
+                // Purchase the monthly package
+                const result = await RevenueCatService.purchaseSubscription(monthlyPackage);
+                
+                if (result.success) {
+                  // Save selected vices to database
+                  if (user) {
+                    await import('@/services/supabase').then(({ supabase }) =>
+                      supabase.from('users').update({ vices: selected }).eq('id', user.id)
+                    );
+                  }
+                  
+                  // Navigate to home
+                  navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+                } else {
+                  setError(result.error || 'Purchase failed');
+                }
+              } catch (purchaseError: any) {
+                console.error('Purchase error:', purchaseError);
+                setError(purchaseError.message || 'Purchase failed');
+              } finally {
+                setIsProcessingPayment(false);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Subscription setup error:', error);
+      setError(error.message || 'Failed to setup subscription');
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handleNext = async () => {
     if (step === onboardingSteps.length - 1) {
+      // Final step - trigger purchase
       if (selected.length === 0) {
         setError('Please select at least one vice.');
         return;
       }
-      setError('');
-      // Save to Supabase
-      if (user) {
-        await import('@/services/supabase').then(({ supabase }) =>
-          supabase.from('users').update({ vices: selected }).eq('id', user.id)
-        );
-      }
-      navigation.reset({ index: 0, routes: [{ name: 'Home' as never }] });
+      
+      await handlePurchaseSubscription();
     } else {
       scrollRef.current?.scrollTo({ x: (step + 1) * SCREEN_WIDTH, animated: true });
       setStep(s => s + 1);
@@ -173,7 +244,7 @@ export default function OnboardingScreen() {
           <Text style={styles.step}>Daily Progress</Text>
           {renderDots()}
           <Text style={styles.title}>{onboardingSteps[2].title}</Text>
-          <Text style={styles.subtitle}>{onboardingSteps[2].subtitle}</Text>
+          
           <View style={styles.imageBox}>
             <Image source={onboardingSteps[2].image} style={styles.image} />
           </View>
@@ -182,9 +253,6 @@ export default function OnboardingScreen() {
             <Text style={styles.streakType}>{onboardingSteps[2].streak?.type ?? ''}</Text>
             <Text style={styles.streakDay}>{onboardingSteps[2].streak ? `Day ${onboardingSteps[2].streak.day} of ${onboardingSteps[2].streak.goal}` : ''}</Text>
           </View>
-          <View style={styles.rowBtns}>
-            <TouchableOpacity style={styles.resetBtn}><Text style={styles.resetBtnText}>Reset Streak</Text></TouchableOpacity>
-          </View>
         </View>
 
         {/* Exclusive Rewards */}
@@ -192,30 +260,38 @@ export default function OnboardingScreen() {
           <Text style={styles.step}>Exclusive Rewards</Text>
           {renderDots()}
           <Text style={styles.title}>{onboardingSteps[3].title}</Text>
-          <Text style={styles.subtitle}>{onboardingSteps[3].subtitle}</Text>
           <View style={styles.imageBox}>
             <Image source={onboardingSteps[3].image} style={styles.image} />
           </View>
           <Text style={styles.description}>{onboardingSteps[3].description}</Text>
         </View>
 
-        {/* Welcome/testimonials */}
-        <View style={[styles.container, styles.welcomeContainer, { width: SCREEN_WIDTH }]}>
-          <Text style={styles.step}>Welcome</Text>
+        {/* Final commitment step */}
+        <View style={[styles.container, { width: SCREEN_WIDTH }]}>
+          <Text style={styles.step}>Your Commitment</Text>
           {renderDots()}
           <Text style={styles.title}>{onboardingSteps[4].title}</Text>
           <Text style={styles.subtitle}>{onboardingSteps[4].subtitle}</Text>
-          <View style={styles.testimonialsRow}>
-            {onboardingSteps[4].testimonials?.map((t, i) => (
-              <View key={i} style={[styles.testimonialCard, { backgroundColor: t.bg }]}> 
-                <Image source={t.image} style={styles.testimonialImg} />
-                <Text style={styles.testimonialName}>{t.name}</Text>
-                <Text style={styles.testimonialText}>{t.text}</Text>
-              </View>
-            ))}
-          </View>
           <Text style={styles.description}>{onboardingSteps[4].description}</Text>
-          <Text style={styles.ctaSub}>{onboardingSteps[4].ctaSub}</Text>
+          
+          {/* Elite membership features */}
+          <View style={styles.rewardsList}>
+            <View style={styles.rewardItem}>
+              
+              <Text style={styles.rewardMilestone}>Elite 250</Text>
+              <Text style={styles.rewardReward}>Exclusive Community</Text>
+            </View>
+            <View style={styles.rewardItem}>
+              
+              <Text style={styles.rewardMilestone}>Premium</Text>
+              <Text style={styles.rewardReward}>Luxury Rewards</Text>
+            </View>
+            <View style={styles.rewardItem}>
+              
+              <Text style={styles.rewardMilestone}>Science</Text>
+              <Text style={styles.rewardReward}>Proven Results</Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
       <View style={styles.bottomRow}>
@@ -224,8 +300,18 @@ export default function OnboardingScreen() {
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-          <Text style={styles.nextBtnText}>{step === onboardingSteps.length - 1 ? '100$/month' : 'Next'}</Text>
+        <TouchableOpacity 
+          style={[styles.nextBtn, isProcessingPayment && styles.nextBtnDisabled]} 
+          onPress={handleNext}
+          disabled={isProcessingPayment}
+        >
+          {isProcessingPayment ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.nextBtnText}>
+              {step === onboardingSteps.length - 1 ? '50$/Month' : 'Next'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -379,6 +465,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Space Grotesk-Bold',
     fontSize: 16,
   },
+  nextBtnDisabled: {
+    opacity: 0.7,
+    backgroundColor: '#555',
+  },
   testimonialsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -521,4 +611,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Space Grotesk-Bold',
     fontSize: 16,
   },
-}); 
+});
+
+export default OnboardingScreen; 
